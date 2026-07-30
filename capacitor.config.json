@@ -1,0 +1,9 @@
+{
+  "appId": "com.fireclimb.app",
+  "appName": "Fire Climb",
+  "webDir": "dist",
+  "backgroundColor": "#0A0907",
+  "android": {
+    "backgroundColor": "#0A0907"
+  }
+}
