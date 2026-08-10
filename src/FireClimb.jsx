@@ -14,6 +14,17 @@ const LEVELS = {
   hard:   { label: "Hard",   fire: 0.90, behind: 0.26, ramp: 900,  reach: 170, gapMin: 92, gapMax: 132, brkAt: 40,  brkP: 0.36, flames: 3, note: "It is already at your heels" },
 };
 
+const HIGH_SCORE_KEY = "fireClimbHighScores";
+
+const loadHighScores = () => {
+  try {
+    const raw = localStorage.getItem(HIGH_SCORE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
 export default function FireClimb() {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
@@ -21,6 +32,8 @@ export default function FireClimb() {
   const [score, setScore] = useState(0);
   const [name, setName] = useState("");
   const [level, setLevel] = useState("medium");
+  const [highScores, setHighScores] = useState(loadHighScores);
+  const [isNewHigh, setIsNewHigh] = useState(false);
   const game = useRef(null);
   const phaseRef = useRef("menu");
   const cfgRef = useRef(LEVELS.medium);
@@ -29,6 +42,24 @@ export default function FireClimb() {
     document.documentElement.style.backgroundColor = "#0A0907";
     document.body.style.backgroundColor = "#0A0907";
   }, []);
+
+  useEffect(() => {
+    if (phase !== "over") return;
+    const climber = name.trim() || "CLIMBER";
+    setHighScores((prev) => {
+      const best = prev[level];
+      if (best && score <= best.score) {
+        setIsNewHigh(false);
+        return prev;
+      }
+      const next = { ...prev, [level]: { score, name: climber } };
+      try {
+        localStorage.setItem(HIGH_SCORE_KEY, JSON.stringify(next));
+      } catch {}
+      setIsNewHigh(score > 0);
+      return next;
+    });
+  }, [phase]);
 
   const makeBar = (y, W, prevX, sc, cfg) => {
     const min = WALL + BAR_W / 2 + 4;
@@ -407,6 +438,7 @@ export default function FireClimb() {
   const play = () => {
     cfgRef.current = LEVELS[level];
     reset();
+    setIsNewHigh(false);
     setPhase("playing");
   };
   const exit = () => {
@@ -556,6 +588,17 @@ export default function FireClimb() {
                   <p className="ember font-mono text-[76px] leading-none font-black"
                     style={{ color: "#FFD37A", textShadow: "0 0 30px rgba(255,120,20,0.9), 0 0 70px rgba(255,70,0,0.55), 0 2px 0 #7E2200" }}>{score}</p>
                   <p className="mt-2 font-mono text-[10px] tracking-[0.4em] uppercase text-[#9C8E7C]">Points</p>
+                  {isNewHigh ? (
+                    <p className="ember mt-4 font-mono text-[12px] font-black tracking-[0.35em] uppercase text-[#FFD37A]"
+                      style={{ textShadow: "0 0 16px rgba(255,120,20,0.8), 0 0 36px rgba(255,80,0,0.5)" }}>
+                      New High Score
+                    </p>
+                  ) : highScores[level] ? (
+                    <p className="mt-4 font-mono text-[11px] tracking-[0.15em] uppercase text-[#C9BCA8]">
+                      Best <span className="text-[#FFB347] font-bold">{highScores[level].score}</span> by{" "}
+                      <span className="text-[#FFF3D6]">{highScores[level].name}</span>
+                    </p>
+                  ) : null}
                 </div>
                 <div className="h-px bg-gradient-to-r from-transparent via-[#FF7A18] to-transparent" />
                 <div className="flex divide-x divide-[#3A3128] text-center">
